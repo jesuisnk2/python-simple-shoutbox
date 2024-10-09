@@ -5,6 +5,7 @@ Shoutbox tự kỷ với script python cơ bản
 - Chat tự kỷ =))
 - Chọn kiểu cơ sở dữ liệu: sqlite, csv và json
 - Hộp thoại với thời gian thực, autoload mỗi 5s
+- Gửi, sửa, xóa
 
 > Cách sử dụng
 - Chạy tệp **ShoutboxRealtimeWithDBtype.py**
