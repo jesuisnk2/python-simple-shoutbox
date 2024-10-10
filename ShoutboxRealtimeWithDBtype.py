@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, simpledialog, Frame
-import time
-import k_func as k_func
+from tkinter import messagebox, simpledialog, Frame, Scrollbar
+
+import k_func
+import bot
 
 app_title = 'Simple Shoutbox'
-time_reload = 5000 #autoload mỗi 5s
+time_reload = 5000  # autoload mỗi 5s
 
 # Hàm để chọn kiểu cơ sở dữ liệu
 def choose_db_type():
@@ -33,16 +34,15 @@ class ShoutboxApp:
         self.chat_frame = Frame(master)
         self.chat_frame.pack(padx=10, pady=10)
 
-        # Tạo Listbox hiển thị danh sách chat
-        self.chat_listbox = tk.Listbox(self.chat_frame, width=50, height=15)
-        self.chat_listbox.pack(side=tk.LEFT)
+        # Tạo Text widget hiển thị danh sách chat
+        self.chat_text = tk.Text(self.chat_frame, width=50, height=15, wrap=tk.WORD)
+        self.chat_text.pack(side=tk.LEFT)
 
-        # Tạo Scrollbar cho Listbox
-        self.scrollbar = tk.Scrollbar(self.chat_frame)
+        # Tạo Scrollbar cho Text widget
+        self.scrollbar = Scrollbar(self.chat_frame, command=self.chat_text.yview)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.chat_listbox.config(yscrollcommand=self.scrollbar.set)
-        self.scrollbar.config(command=self.chat_listbox.yview)
+        self.chat_text.config(yscrollcommand=self.scrollbar.set)
 
         # Tạo label và entry cho tên
         self.label_name = tk.Label(master, text="Tên của bạn:")
@@ -53,8 +53,8 @@ class ShoutboxApp:
         # Tạo label và entry cho nội dung
         self.label_msg = tk.Label(master, text="Nội dung:")
         self.label_msg.pack()
-        self.entry_msg = tk.Entry(master)
-        self.entry_msg.pack(padx=10, pady=5)
+        self.textarea_msg = tk.Text(master, height=10, width=40, wrap=tk.WORD)  # Sử dụng wrap=tk.WORD
+        self.textarea_msg.pack(padx=10, pady=5)
 
         # Tạo nút gửi
         self.send_button = tk.Button(master, text="Gửi", command=self.send_message)
@@ -72,7 +72,7 @@ class ShoutboxApp:
 
     def update_chat_display(self):
         # Xóa nội dung hiện tại
-        self.chat_listbox.delete(0, tk.END)
+        self.chat_text.delete(1.0, tk.END)
 
         # Lấy danh sách chat
         if shoutbox.count_chat() > 0:
@@ -83,17 +83,18 @@ class ShoutboxApp:
                 else:  # csv, json
                     id, name, msg, time = chat["id"], chat["name"], chat["msg"], chat["time"]
 
-                # Hiển thị chat
-                self.chat_listbox.insert(tk.END, f'{id}) <{name}>: {msg} ({k_func.ago(time)})')
-
+                # Hiển thị chat với khoảng cách giữa các từ và tự động xuống dòng
+                formatted_msg = f'{id}) <{name}>: {msg} ({k_func.ago(time)})\n'
+                self.chat_text.insert(tk.END, formatted_msg)
+                self.chat_text.see(tk.END)
         else:
-            self.chat_listbox.insert(tk.END, 'Chưa có tin nhắn nào.')
+            self.chat_text.insert(tk.END, 'Chưa có tin nhắn nào.\n')
 
         self.master.after(time_reload, self.update_chat_display)
 
     def send_message(self):
         name = self.entry_name.get()
-        msg = self.entry_msg.get()
+        msg = self.textarea_msg.get("1.0", tk.END).strip()  # Sử dụng textarea_msg
 
         # Kiểm tra điều kiện nhập
         if len(name) < 3 or len(msg) < 5:
@@ -102,18 +103,20 @@ class ShoutboxApp:
 
         # Ghi dữ liệu vào cơ sở dữ liệu
         shoutbox.insert_chat(name, msg)
-
+        # bot trả lời
+        if bot.xemboi_cmd in msg:
+            shoutbox.insert_chat(bot.bot_name, bot.xemboi_get)
         # Xóa nội dung tin nhắn đã nhập, nhưng giữ lại tên
-        self.entry_msg.delete(0, tk.END)
+        self.textarea_msg.delete("1.0", tk.END)
 
     def edit_message(self):
-        selected = self.chat_listbox.curselection()
+        selected = self.chat_text.tag_ranges("sel")
         if not selected:
             messagebox.showwarning("Cảnh báo", "Vui lòng chọn một tin nhắn để sửa.")
             return
 
-        index = selected[0]
-        chat_data = self.chat_listbox.get(index)
+        start, end = selected
+        chat_data = self.chat_text.get(start, end)
         id = int(chat_data.split(')')[0])  # Lấy ID từ chuỗi
 
         new_name = simpledialog.askstring("Sửa tên", "Nhập tên mới:", initialvalue=chat_data.split('<')[1].split('>')[0])
@@ -125,13 +128,13 @@ class ShoutboxApp:
             self.update_chat_display()  # Cập nhật lại danh sách chat
 
     def delete_message(self):
-        selected = self.chat_listbox.curselection()
+        selected = self.chat_text.tag_ranges("sel")
         if not selected:
             messagebox.showwarning("Cảnh báo", "Vui lòng chọn một tin nhắn để xóa.")
             return
 
-        index = selected[0]
-        chat_data = self.chat_listbox.get(index)
+        start, end = selected
+        chat_data = self.chat_text.get(start, end)
         id = int(chat_data.split(')')[0])  # Lấy ID từ chuỗi
 
         confirm = messagebox.askyesno("Xác nhận", "Bạn có chắc chắn muốn xóa tin nhắn này?")

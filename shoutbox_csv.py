@@ -3,7 +3,7 @@ import os
 import time
 
 # tạo file csv để lưu giữ liệu
-csv_file = 'python/2407me.csv'
+csv_file = 'python/database/2407me.csv'
 if not os.path.exists(csv_file):
     # tạo DataFrame với các cột id, name, msg, time
     df = pd.DataFrame(columns=["id", "name", "msg", "time"])

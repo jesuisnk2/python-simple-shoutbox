@@ -2,7 +2,7 @@ import sqlite3
 import time
 
 # kết nối với sqlite file
-conn = sqlite3.connect('python/2407me.db')
+conn = sqlite3.connect('python/database/2407me.db')
 cursor = conn.cursor()
 
 # tạo bảng `shoutbox` nếu chưa có
@@ -38,7 +38,7 @@ def get_chat(per, page):
 
 # lấy toàn bộ chat
 def get_all_chat():
-    cursor.execute("SELECT * FROM shoutbox ORDER BY time DESC")
+    cursor.execute("SELECT * FROM shoutbox ORDER BY id ASC")
     return cursor.fetchall()
 
 # đếm chat

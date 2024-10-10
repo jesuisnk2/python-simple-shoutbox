@@ -3,7 +3,7 @@ import os
 import time
 
 # tạo file json để lưu giữ liệu
-json_file = "python/2407me.json"
+json_file = "python/database/2407me.json"
 if not os.path.exists(json_file):
     with open(json_file, 'w') as file:
         json.dump([], file)  # Lưu danh sách rỗng
